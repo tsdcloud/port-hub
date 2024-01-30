@@ -1,18 +1,59 @@
 import * as React from 'react';
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
+import Checkbox from '@mui/material/Checkbox';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
 
-export default function AutoSelect({data=top100Films, width=300, label="Movie", callback, value={}}) {
+const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
+
+export default function AutoSelect({
+  data=top100Films,
+  width=300,
+  label="Movie",
+  id="Movie",
+  callback,
+  value={},
+  multiple=false,
+  variant="standard"
+}) {
   return (
+    (multiple)?
     <Autocomplete
-      disablePortal
-      id="combo-box-demo"
+      multiple
+      disableClearable={true}
+      id={id}
       options={data}
-      sx={{ width: width }}
-      renderInput={(params) => <TextField {...params} label={label} />}
-      onChange={(event)=>{callback(event)}}
-      value={value}
+      disableCloseOnSelect={false}
+      getOptionLabel={(option) => option.label}
+      onChange={(event,newValue)=>{callback(event,newValue)}}
+      renderOption={(props, option, { selected }) => (
+        <li {...props}>
+          <Checkbox
+            icon={icon}
+            checkedIcon={checkedIcon}
+            style={{ marginRight: 8 }}
+            checked={selected}
+          />
+          {option.label}
+        </li>
+      )}
+      style={{ width: 500 }}
+      renderInput={(params) => (
+        <TextField {...params} label={label} placeholder="  " variant={variant} />
+      )}
     />
+    :
+      <Autocomplete
+        disablePortal
+        id={id}
+        options={data}
+        sx={{ width: width }}
+        renderInput={(params) => <TextField {...params} label={label} variant={variant} />}
+        onChange={(event,newValue)=>{callback(event,newValue)}}
+        value={value}
+      />
   );
 }
 

@@ -13,7 +13,7 @@ def read(request):
     }
     conn.request("GET", "/career", payload, headers)
     response = conn.getresponse()
-    data = {}
+    data = {"status":400}
     if response.status == 429:
         data['status'] = response.status
         data['code'] = -1

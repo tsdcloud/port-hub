@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.urls import reverse
 from django.contrib.auth import authenticate, logout, login
@@ -22,11 +23,13 @@ from . import servicecareerarticle as scareerarticle
 from . constances import (
     ENDPOINT_ENTITY,
     ENDPOINT_CAREER,
-    ENDPOINT_USER
+    ENDPOINT_USER,
+    ENDPOINT_PORT
 )
 
 import http.client
 import json
+import requests
 
 
 # Create your views here.
@@ -61,6 +64,8 @@ def f_login(request):
                         username=email,
                         password=password
                     )
+
+                if not hasattr(user, 'profil') :
                     profil = Profil()
                     profil.access = "e"
                     profil.refresh = "e"
@@ -99,8 +104,13 @@ def f_login(request):
 
 
 @login_required(login_url='/')
+def d_logout(request):
+    logout(request=request)
+    return render(request, 'frontend/login.html')
+
+@login_required(login_url='/')
 def dashbord(request):
-    # logout(request=request)
+    #logout(request=request)
     return render(request, 'frontend/index.html')
 
 
@@ -115,7 +125,9 @@ def user(request):
     response = conn.getresponse()
     data = json.loads(response.read())
     data['access'] = request.user.profil.access
-    conn.close()
+    if response.status == 401:
+        logout(request=request)
+        return JsonResponse({"status":401},401)
     return JsonResponse(data, status=response.status)
 
 
@@ -200,8 +212,9 @@ def careerarticle(request):
 
 
 @login_required(login_url='/')
+@csrf_exempt
 def api(request):
-    data = {"status": 400}
+    data = {"status": 402}
 
     if request.method == "GET":
         form = ApiForm(request.GET)
@@ -211,6 +224,8 @@ def api(request):
         charge = json.loads(request.body)
         form = ApiForm(charge)
         payload = json.dumps(charge)
+        if charge.get('data', 0) != 0:    #hasattr(charge, 'data'):
+            payload=json.dumps(charge['data'])
         verb = request.method
 
     if form.is_valid():
@@ -225,29 +240,53 @@ def api(request):
             ENDPOINT = ENDPOINT_CAREER
         elif end == 'entity':
             ENDPOINT = ENDPOINT_ENTITY
+        elif end == 'port':
+            ENDPOINT = ENDPOINT_PORT
         else:
             ENDPOINT = ENDPOINT_USER
 
-        conn = http.client.HTTPSConnection(ENDPOINT)
         headers = {
             "Authorization": 'Bearer ' + request.user.profil.access,
             'Content-type': 'application/json',
             'Accept': 'application/json'
-        }
+        }  
+
         if detail is True:
-            conn.request(
-                verb,
-                "/" + str(terminaison) + "/" + str(id) + "/" + str(action),
-                payload,
-                headers
-            )
+            url = "/" + str(terminaison) + "/" + str(id) + "/" + str(action)
         else:
-            if page != 1:
-                terminaison += '/?page=' + str(page)
-            conn.request(verb, "/" + terminaison, payload, headers)
-        response = conn.getresponse()
-        data = json.loads(response.read())
-        data['status'] = response.status
+            url = "/" + str(terminaison)+ "/" + str(action)
+        
+        if page not in [1, '1', '']:
+            url += '?page=' + str(page)
+        
+        try:
+            conn = http.client.HTTPSConnection(ENDPOINT)
+            conn.request(verb, url, payload, headers)
+            response = conn.getresponse()
+            status = response.status
+            data = json.loads(response.read())
+        except:
+            url = 'http://' + ENDPOINT + url
+            if request.method == "GET":
+                response = requests.get(url=url, headers=headers)
+            elif request.method == "POST":
+                response = requests.post(url=url, headers=headers, data=payload)
+            else:
+                response = requests.post(url=url, headers=headers, data=payload)
+             
+            status = response.status_code
+            data = response.json()
+
+        try:
+            data['status'] = status
+            data['url'] = url
+        except:
+            data = {
+                "results" : data,
+                "status" : status,
+                "url" : url
+            }
+        
     else:
         data['errors'] = {
            "end": form['end'].errors,
@@ -257,4 +296,4 @@ def api(request):
            "action": form['action'].errors,
            "verb": verb
         }
-    return JsonResponse(data, status=data['status'])
+    return JsonResponse(data, status=status)

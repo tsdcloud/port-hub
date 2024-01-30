@@ -20,19 +20,20 @@ import {Route, Routes } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
-import BusinessIcon from '@mui/icons-material/Business';
 import AddHomeWorkIcon from '@mui/icons-material/AddHomeWork';
 
-import Dashboard from "./Dashboard";
-import EntityPage from './pages/EntityPage';
-import ArticlePage from './pages/ArticlePage';
-import CareerPage from './pages/CareerPage';
-import TransfertPage from './pages/TransfertPage';
-import LocalitePage from './pages/LocalitePage';
+import GlobalSetting from './pages/GlobaLSetting';
+import Import from './pages/Import';
+import Notification from './pages/Notification';
+
+import { useContext } from 'react';
+import { AUTHCONTEXT } from './context/AuthContext';
 
 const drawerWidth = 240;
 
 function Menu(props) {
+  const {user, permissions} = useContext(AUTHCONTEXT)
+
   const { window } = props;
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
@@ -42,101 +43,59 @@ function Menu(props) {
 
   const drawer = (
     <div>
-      <Logo />
       <Divider />
       <List>
-        <Link to="/">
-          <ListItem key="dashboard" disablePadding>
-              <ListItemButton>
-                  <ListItemIcon>
+        {
+          (user.member.is_superuser | permissions.includes('view_global_setting') ) ?
+            <>
+              <Link to="/">
+                <ListItem key="globalsetting" disablePadding>
+                    <ListItemButton>
+                        <ListItemIcon>
+                            <AddHomeWorkIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Configuration Globale" />
+                    </ListItemButton>
+                </ListItem>
+              </Link>
+              <Divider />
+            </>
+          :null
+        }
+        
+        { 
+          (user.member.is_superuser | permissions.includes('view_pesee_container') | permissions.includes('view_declare_container') ) ?
+            <>
+              <Link to="/import">
+                <ListItem key="import" disablePadding>
+                  <ListItemButton>
+                    <ListItemIcon>
                       <AddHomeWorkIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Tableau de bord" />
-              </ListItemButton>
-          </ListItem>
-        </Link>
-        <Divider />
-        <Link to="/entity">
-          <ListItem key="entity" disablePadding>
-              <ListItemButton>
-                  <ListItemIcon>
-                      <BusinessIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Gestion des entreprises" />
-              </ListItemButton>
-          </ListItem>
-        </Link>
-        <Link to="/localization">
-          <ListItem key="localization" disablePadding>
-              <ListItemButton>
-                  <ListItemIcon>
-                      <BusinessIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Localités" />
-              </ListItemButton>
-          </ListItem>
-        </Link>
-        <Divider />
-        <ListItem key="employee" disablePadding>
-            <ListItemButton>
-                <ListItemIcon>
-                    <BusinessIcon />
-                </ListItemIcon>
-                <ListItemText primary="Gestion des employés" />
-            </ListItemButton>
-        </ListItem>
-        <Divider />
-        <Link to="/article">
-          <ListItem key="article" disablePadding>
-              <ListItemButton>
-                  <ListItemIcon>
-                      <BusinessIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Gestion des articles" />
-              </ListItemButton>
-          </ListItem>
-        </Link>
-        <Divider />
-        <Link to="/career">
-          <ListItem key="career" disablePadding>
-              <ListItemButton>
-                  <ListItemIcon>
-                      <BusinessIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Gestion des carrières" />
-              </ListItemButton>
-          </ListItem>
-        </Link>
-        <Divider />
-        <Link to="/operation">
-          <ListItem key="operation" disablePadding>
-              <ListItemButton>
-                  <ListItemIcon>
-                      <BusinessIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Gestion des opérations" />
-              </ListItemButton>
-          </ListItem>
-        </Link>
-        <Divider />
-        <ListItem key="vente" disablePadding>
-            <ListItemButton>
-                <ListItemIcon>
-                    <BusinessIcon />
-                </ListItemIcon>
-                <ListItemText primary="Gestion des ventes" />
-            </ListItemButton>
-        </ListItem>
-        <Divider />
-        <ListItem key="redevances" disablePadding>
-            <ListItemButton>
-                <ListItemIcon>
-                    <BusinessIcon />
-                </ListItemIcon>
-                <ListItemText primary="Gestion des redevances" />
-            </ListItemButton>
-        </ListItem>
-        <Divider />
+                    </ListItemIcon>
+                    <ListItemText primary="Import excel file" />
+                  </ListItemButton>
+                </ListItem>
+              </Link>
+            </>
+          :null
+        }
+
+        { 
+          (user.member.is_superuser | permissions.includes('view_pesee_notification_account') | permissions.includes('view_notification') ) ?
+            <>
+              <Link to="/notification">
+                <ListItem key="import" disablePadding>
+                  <ListItemButton>
+                    <ListItemIcon>
+                      <AddHomeWorkIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Notification" />
+                  </ListItemButton>
+                </ListItem>
+              </Link>
+            </>
+          :null
+        }
       </List>
       <Divider />
     </div>
@@ -167,7 +126,7 @@ function Menu(props) {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div">
-            MINING FLOW
+            PORT HUB
           </Typography>
         </Toolbar>
       </AppBar>
@@ -209,13 +168,21 @@ function Menu(props) {
       >
         <Toolbar />
           <Routes>
-            <Route exact path="/" element={<Dashboard />} />
-            <Route exact path="/home" element={<Dashboard />} />
-            <Route exact path="/operation" element={<TransfertPage />} />
-            <Route exact path="/entity" element={<EntityPage />} />
-            <Route exact path="/article" element={<ArticlePage />} />
-            <Route exact path="/career" element={<CareerPage />} />
-            <Route exact path="/localization" element={<LocalitePage />} />
+            {
+              (user.member.is_superuser | permissions.includes('view_global_setting') ) ?
+                <Route exact path="/" element={<GlobalSetting />} />
+              :null
+            }
+            { 
+              (user.member.is_superuser | permissions.includes('view_pesee_container') | permissions.includes('view_declare_container') ) ?
+                <Route exact path="/import" element={<Import />} />
+              :null
+            }
+            { 
+              (user.member.is_superuser | permissions.includes('view_pesee_notification_account') | permissions.includes('view_notification') ) ?
+                <Route exact path="/notification" element={<Notification />} />
+              :null
+            }
           </Routes>
       </Box>
     </Box>
